@@ -22,8 +22,6 @@ import static arc.Core.*;
 import static mindustry.Vars.*;
 
 public class Shadow{
-    public static boolean depthTex = true, shadow = true;
-
     public static Field fCircles = MI2Utils.getField(LightRenderer.class, "circles"), fSize = MI2Utils.getField(LightRenderer.class, "circleIndex"), fCircleX, fCircleY, fCircleR, fCircleC;
     public static int size = 0;
     public static Seq<float[]> floatlights = new Seq<>();
@@ -120,15 +118,16 @@ public class Shadow{
     }
 
     public static float getLayer(){
-        return depthTex?layer:layer-4f;
+        return JsonSettings.getb("depthTex",true)?layer:layer-4f;
     }
 
     public static void draw(Seq<Tile> tiles){
+        if(!JsonSettings.getb("shadow",true)) return;
         for(Tile tile : tiles){
             //draw white/shadow color depending on blend
             float bs = tile.block().size * tilesize;
             Draw.z(getLayer());
-            if(!depthTex){
+            if(!JsonSettings.getb("depthTex",true)){
                 Draw.color();
                 Draw.mixcol(Color.white, 1f);
                 Draw.rect(tile.block().fullIcon, tile.build == null ? tile.worldx() : tile.build.x, tile.build == null ? tile.worldy() : tile.build.y, bs, bs, tile.build == null ? 0f : tile.build.drawrot());
@@ -140,7 +139,7 @@ public class Shadow{
     }
 
     public static void applyShader(){
-        if(!Shadow.shadow || SSShaders.shadow == null) return;
+        if(!JsonSettings.getb("shadow",true) || SSShaders.shadow == null) return;
         //the layer of block shadow;
         Draw.drawRange(getLayer(), 0.1f, () -> renderer.effectBuffer.begin(Color.clear), () -> {
             renderer.effectBuffer.end();
@@ -162,9 +161,11 @@ public class Shadow{
         }
 
         floatlights.sort(fs -> -fs[3]);
+        float minR = JsonSettings.geti("lightLowPass", 8);
+        floatlights.remove(fs -> fs[3] < minR);
 
         if(floatlights.isEmpty()) return;
-        for(int i = 0; i < Math.min(floatlights.size, 400); i++){
+        for(int i = 0; i < Math.min(Math.min(floatlights.size, 400), JsonSettings.geti("maxLights", 100)); i++){
             pack(floatlights.get(i));
             data.addAll(Tmp.v3.x, Tmp.v3.y);
         }

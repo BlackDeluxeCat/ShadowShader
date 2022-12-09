@@ -37,7 +37,7 @@ public class SSShaders{
         @Override
         public void apply(){
             Shadow.lightsUniformData(data);
-            setUniformf("u_EDGE_PRECISION", 1f / Mathf.pow(Vars.renderer.getDisplayScale(), 0.4f));
+            setUniformf("u_EDGE_PRECISION", 8f / (float)JsonSettings.geti("precision", 8) / (JsonSettings.getb("zoomPrec", false) ? Mathf.pow(Vars.renderer.getDisplayScale(), 0.4f):1f));
             setUniformf("u_offset",
                     Core.camera.position.x - Core.camera.width / 2,
                     Core.camera.position.y - Core.camera.height / 2);
@@ -45,7 +45,7 @@ public class SSShaders{
             setUniformf("u_invsize", 1f/Core.camera.width, 1f/Core.camera.height);
 
             setUniformf("u_ambientLight", Vars.state.rules.ambientLight.a);
-            setUniformi("u_lightcount", Shadow.size);
+            setUniformi("u_lightcount", data.size/2);
             setUniform2fv("u_lights", data.items, 0, data.size);
         }
     }

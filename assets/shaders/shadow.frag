@@ -36,7 +36,7 @@ void main(){
     float shadowness = 0.0;
 
     //source light
-    for(int i = -1; i < MAX_LIGHTS; i++){
+    for(int i = -1; i < u_lightcount; i++){
         vec4 light;
         if(i == -1){
             //ambientLight
