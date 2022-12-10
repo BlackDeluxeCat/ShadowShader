@@ -112,7 +112,7 @@ public class Shadow{
         tmpc[0] = fCircleX == null ? -1f : MI2Utils.getValue(fCircleX, circle);
         tmpc[1] = fCircleY == null ? -1f : MI2Utils.getValue(fCircleY, circle);
         var tile = world.tileWorld(tmpc[0], tmpc[1]);
-        tmpc[2] = tile == null ? 0f : tile.build != null && Mathf.dst(tile.build.x, tile.build.y, tmpc[0], tmpc[1]) < 0.1f ? tile.block().size : 0f;   //whether the light comes from a building
+        tmpc[2] = tile == null ? 0f : tile.build != null && Mathf.dst(tile.build.x, tile.build.y, tmpc[0], tmpc[1]) < 0.1f ? tile.block().size * tilesize : 0f;   //whether the light comes from a building
         tmpc[3] = fCircleR == null ? -1f : MI2Utils.getValue(fCircleR, circle);
         tmpc[3] *= fCircleC == null ? 1f : Tmp.c1.abgr8888(MI2Utils.getValue(fCircleC, circle)).a;
     }
@@ -161,11 +161,11 @@ public class Shadow{
         }
 
         floatlights.sort(fs -> -fs[3]);
-        float minR = JsonSettings.geti("lightLowPass", 8);
-        floatlights.remove(fs -> fs[3] < minR);
 
         if(floatlights.isEmpty()) return;
+        float minR = JsonSettings.geti("lightLowPass", 8);
         for(int i = 0; i < Math.min(Math.min(floatlights.size, 400), JsonSettings.geti("maxLights", 100)); i++){
+            if(floatlights.get(i)[3] < minR) break;
             pack(floatlights.get(i));
             data.addAll(Tmp.v3.x, Tmp.v3.y);
         }

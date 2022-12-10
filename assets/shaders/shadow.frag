@@ -36,7 +36,7 @@ void main(){
     float shadowness = 0.0;
 
     //source light
-    for(int i = -1; i < u_lightcount; i++){
+    for(int i = -1; i < MAX_LIGHTS; i++){
         vec4 light;
         if(i == -1){
             //ambientLight
@@ -53,11 +53,12 @@ void main(){
         float dst = distance(worldxy, light.xy);
         if(dst < radius){
             bool isShadow = false;
-            float shadowLen = min((dst - light.z), dst / LIGHTH);
+            float shadowLen = dst / LIGHTH;
             for(float j = 0.0; j < shadowLen; j += u_EDGE_PRECISION){
                 vec2 blockscreenxy = T + normalize(light.xy - worldxy) * j * u_invsize;
                 vec4 shadow = texture2D(u_texture, blockscreenxy);
-                if(shadow.b - shadow0.b> j / shadowLen){
+                if((shadow.b - shadow0.b) > (j / shadowLen)){
+                    if(dst - j < light.z) break;
                     shadowness = max(shadowness, 1.0 - dst / radius);
                     isShadow = true;
                     break;
