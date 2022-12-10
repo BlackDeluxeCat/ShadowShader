@@ -22,6 +22,7 @@ import static arc.Core.*;
 import static mindustry.Vars.*;
 
 public class Shadow{
+    static boolean depthTex, shadow, debug;
     public static Field fCircles = MI2Utils.getField(LightRenderer.class, "circles"), fSize = MI2Utils.getField(LightRenderer.class, "circleIndex"), fCircleX, fCircleY, fCircleR, fCircleC;
     public static int size = 0;
     public static Seq<float[]> floatlights = new Seq<>();
@@ -99,6 +100,12 @@ public class Shadow{
 
     }
 
+    public static void updSetting(){
+        depthTex = JsonSettings.getb("depthTex",true);
+        shadow = JsonSettings.getb("shadow",false);
+        debug = JsonSettings.getb("debug",false);
+    }
+
     public static void getIndex(){
         size = MI2Utils.getValue(fSize, renderer.lights);
     }
@@ -118,20 +125,22 @@ public class Shadow{
     }
 
     public static float getLayer(){
-        return JsonSettings.getb("depthTex",true)?layer:layer-4f;
+        return depthTex?layer:layer-4f;
     }
 
     public static void draw(Seq<Tile> tiles){
-        if(!JsonSettings.getb("shadow",true)) return;
+        if(!shadow && !debug) return;
+
         for(Tile tile : tiles){
             //draw white/shadow color depending on blend
             float bs = tile.block().size * tilesize;
             Draw.z(getLayer());
-            if(!JsonSettings.getb("depthTex",true)){
+            if(!depthTex){
                 Draw.color();
                 Draw.mixcol(Color.white, 1f);
                 Draw.rect(tile.block().fullIcon, tile.build == null ? tile.worldx() : tile.build.x, tile.build == null ? tile.worldy() : tile.build.y, bs, bs, tile.build == null ? 0f : tile.build.drawrot());
             }else{
+                Draw.mixcol();
                 Draw.color((!tile.block().hasShadow || (state.rules.fog && tile.build != null && !tile.build.wasVisible)) ? Color.clear : Color.white);
                 Draw.rect(normRegions[tile.block().id], tile.build == null ? tile.worldx() : tile.build.x, tile.build == null ? tile.worldy() : tile.build.y, bs, bs, tile.build == null ? 0f : tile.build.drawrot());
             }
@@ -139,7 +148,7 @@ public class Shadow{
     }
 
     public static void applyShader(){
-        if(!JsonSettings.getb("shadow",true) || SSShaders.shadow == null) return;
+        if(!shadow || debug || SSShaders.shadow == null) return;
         //the layer of block shadow;
         Draw.drawRange(getLayer(), 0.1f, () -> renderer.effectBuffer.begin(Color.clear), () -> {
             renderer.effectBuffer.end();
@@ -164,7 +173,8 @@ public class Shadow{
 
         if(floatlights.isEmpty()) return;
         float minR = JsonSettings.geti("lightLowPass", 8);
-        for(int i = 0; i < Math.min(Math.min(floatlights.size, 400), JsonSettings.geti("maxLights", 100)); i++){
+        float maxLight = JsonSettings.geti("maxLights", 100);
+        for(int i = 0; i < Math.min(Math.min(floatlights.size, 400), maxLight); i++){
             if(floatlights.get(i)[3] < minR) break;
             pack(floatlights.get(i));
             data.addAll(Tmp.v3.x, Tmp.v3.y);

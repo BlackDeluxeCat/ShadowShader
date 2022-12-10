@@ -18,6 +18,7 @@ public class ShadowShader extends Mod{
         });
 
         Events.run(EventType.Trigger.draw, () -> {
+            Shadow.updSetting();
             Shadow.indexGetter.add();
             Shadow.applyShader();
             Groups.draw.remove(Shadow.indexGetter);
@@ -40,6 +41,7 @@ public class ShadowShader extends Mod{
             JsonSettings.checkb("zoomPrec", false, "@zoomPrec", "@zoomPrec.tip", st);
             JsonSettings.slideri("lightLowPass", 8, "@lightLowPass", "@lightLowPass.tip", st,0, 64, 1);
             JsonSettings.slideri("maxLights", 100, "@maxLights", "@maxLights.tip", st,0, 400, 1);
+            JsonSettings.checkb("debug", false, "Debug", "Debug(Depth Texture)", st);
         });
     }
 }
