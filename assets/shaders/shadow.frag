@@ -1,4 +1,4 @@
-#define LOWP
+#define HIGHP
 #define LIGHTH 4.0
 #define MAX_LIGHTS 400
 uniform float u_EDGE_PRECISION;
