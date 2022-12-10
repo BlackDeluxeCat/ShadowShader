@@ -7,7 +7,7 @@ main: "ss.ShadowShader"
 
 description: "SHADOOOW your GAME"
 
-version: 1.0
+version: 1.0.1
 minGameVersion: 140
 java: true
 hidden: true
