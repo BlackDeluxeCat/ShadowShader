@@ -7,6 +7,8 @@ import arc.math.Mathf;
 import arc.struct.FloatSeq;
 import mindustry.Vars;
 
+import static ss.ShadowShader.config;
+
 public class SSShaders{
     public static ShadowShader shadow;
 
@@ -37,7 +39,7 @@ public class SSShaders{
         @Override
         public void apply(){
             Shadow.lightsUniformData(data);
-            setUniformf("u_EDGE_PRECISION", 8f / (float)JsonSettings.geti("precision", 8) / (JsonSettings.getb("zoomPrec", false) ? Mathf.pow(Vars.renderer.getDisplayScale(), 0.4f):1f));
+            setUniformf("u_EDGE_PRECISION", 8f / (float)config.geti("precision", 8) / (config.getb("zoomPrec", false) ? Mathf.pow(Vars.renderer.getDisplayScale(), 0.4f):1f));
             setUniformf("u_offset",
                     Core.camera.position.x - Core.camera.width / 2,
                     Core.camera.position.y - Core.camera.height / 2);

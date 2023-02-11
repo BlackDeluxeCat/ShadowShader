@@ -15,15 +15,17 @@ import mindustry.gen.*;
 import mindustry.graphics.*;
 import mindustry.world.*;
 import mindustry.world.blocks.environment.*;
+import mi2.utils.*;
 
 import java.lang.reflect.*;
 
 import static arc.Core.*;
 import static mindustry.Vars.*;
+import static ss.ShadowShader.config;
 
 public class Shadow{
     static boolean depthTex, shadow, debug;
-    public static Field fCircles = MI2Utils.getField(LightRenderer.class, "circles"), fSize = MI2Utils.getField(LightRenderer.class, "circleIndex"), fCircleX, fCircleY, fCircleR, fCircleC;
+    public static Field fCircles = RefUtils.getField(LightRenderer.class, "circles"), fSize = RefUtils.getField(LightRenderer.class, "circleIndex"), fCircleX, fCircleY, fCircleR, fCircleC;
     public static int size = 0;
     public static Seq<float[]> floatlights = new Seq<>();
 
@@ -101,27 +103,27 @@ public class Shadow{
     }
 
     public static void updSetting(){
-        depthTex = JsonSettings.getb("depthTex",true);
-        shadow = JsonSettings.getb("shadow",false);
-        debug = JsonSettings.getb("debug",false);
+        depthTex = config.getb("depthTex",true);
+        shadow = config.getb("shadow",false);
+        debug = config.getb("debug",false);
     }
 
     public static void getIndex(){
-        size = MI2Utils.getValue(fSize, renderer.lights);
+        size = RefUtils.getValue(fSize, renderer.lights);
     }
 
     public static void deepReflectObject(float[] tmpc, Object circle){
-        if(fCircleX == null) fCircleX = MI2Utils.getField(circle.getClass(), "x");
-        if(fCircleY == null) fCircleY = MI2Utils.getField(circle.getClass(), "y");
-        if(fCircleR == null) fCircleR = MI2Utils.getField(circle.getClass(), "radius");
-        if(fCircleC == null) fCircleC = MI2Utils.getField(circle.getClass(), "color");
+        if(fCircleX == null) fCircleX = RefUtils.getField(circle.getClass(), "x");
+        if(fCircleY == null) fCircleY = RefUtils.getField(circle.getClass(), "y");
+        if(fCircleR == null) fCircleR = RefUtils.getField(circle.getClass(), "radius");
+        if(fCircleC == null) fCircleC = RefUtils.getField(circle.getClass(), "color");
 
-        tmpc[0] = fCircleX == null ? -1f : MI2Utils.getValue(fCircleX, circle);
-        tmpc[1] = fCircleY == null ? -1f : MI2Utils.getValue(fCircleY, circle);
+        tmpc[0] = fCircleX == null ? -1f : RefUtils.getValue(fCircleX, circle);
+        tmpc[1] = fCircleY == null ? -1f : RefUtils.getValue(fCircleY, circle);
         var tile = world.tileWorld(tmpc[0], tmpc[1]);
         tmpc[2] = tile == null ? 0f : tile.build != null && Mathf.dst(tile.build.x, tile.build.y, tmpc[0], tmpc[1]) < 0.1f ? tile.block().size * tilesize : 0f;   //whether the light comes from a building
-        tmpc[3] = fCircleR == null ? -1f : MI2Utils.getValue(fCircleR, circle);
-        tmpc[3] *= fCircleC == null ? 1f : Tmp.c1.abgr8888(MI2Utils.getValue(fCircleC, circle)).a;
+        tmpc[3] = fCircleR == null ? -1f : RefUtils.getValue(fCircleR, circle);
+        tmpc[3] *= fCircleC == null ? 1f : Tmp.c1.abgr8888(RefUtils.getValue(fCircleC, circle)).a;
     }
 
     public static float getLayer(){
@@ -159,7 +161,7 @@ public class Shadow{
     public static void lightsUniformData(FloatSeq data){
         data.clear();
         if(size == 0) return;
-        Seq<Object> seq = MI2Utils.getValue(fCircles, renderer.lights);
+        Seq<Object> seq = RefUtils.getValue(fCircles, renderer.lights);
         if(seq == null) return;
 
         for(int i = 0; i < size; i++){
@@ -172,8 +174,8 @@ public class Shadow{
         floatlights.sort(fs -> -fs[3]);
 
         if(floatlights.isEmpty()) return;
-        float minR = JsonSettings.geti("lightLowPass", 8);
-        float maxLight = JsonSettings.geti("maxLights", 100);
+        float minR = config.geti("lightLowPass", 8);
+        float maxLight = config.geti("maxLights", 100);
         for(int i = 0; i < Math.min(Math.min(floatlights.size, 400), maxLight); i++){
             if(floatlights.get(i)[3] < minR) break;
             pack(floatlights.get(i));
