@@ -5,9 +5,12 @@ author: "BlackDeluxeCat"
 #the fully qualified main class of the mod
 main: "ss.ShadowShader"
 
+dependencies: [
+"mitour-lib"
+]
 description: "SHADOOOW your GAME"
 
-version: 1.0.1
-minGameVersion: 140
+version: 1.1
+minGameVersion: 141
 java: true
 hidden: true
