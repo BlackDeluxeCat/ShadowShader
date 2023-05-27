@@ -1,6 +1,7 @@
 package ss;
 
 import arc.*;
+import arc.math.*;
 import arc.struct.*;
 import arc.util.*;
 import mi2.setting.*;
@@ -18,7 +19,10 @@ public class ShadowShader extends Mod{
     public static ConfigHandler config;
     public ShadowShader(){
         Events.on(ClientLoadEvent.class, e -> {
-            Time.runTask(10f, Shadow::init);
+            Time.runTask(10f, () -> {
+                Generators.init();
+                Shadow.init();
+            });
         });
 
         Events.run(EventType.Trigger.draw, () -> {
@@ -29,6 +33,7 @@ public class ShadowShader extends Mod{
             Groups.draw.add(Shadow.indexGetter);
             Seq<Tile> tiles = RefUtils.getValue(renderer.blocks, "tileview");
             if(tiles != null) Shadow.draw(tiles);
+            Shadow.drawMap();
         });
     }
 

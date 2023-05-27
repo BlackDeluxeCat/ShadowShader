@@ -11,9 +11,11 @@ import arc.struct.*;
 import arc.util.*;
 import arc.util.io.*;
 import mindustry.*;
+import mindustry.content.*;
 import mindustry.gen.*;
 import mindustry.graphics.*;
 import mindustry.world.*;
+import mindustry.world.blocks.defense.turrets.*;
 import mindustry.world.blocks.environment.*;
 import mi2.utils.*;
 
@@ -29,75 +31,83 @@ public class Shadow{
     public static int size = 0;
     public static Seq<float[]> floatlights = new Seq<>();
 
-    public static float layer = Layer.block + 2f;
+    public static float layer = Layer.block + 3f;
 
     public static IndexGetterDrawc indexGetter;
 
-    public static TextureRegion[] normRegions;
+    public static TextureRegion[][] normRegions;
 
     public static void init(){
         SSShaders.load();
         indexGetter = new IndexGetterDrawc();
-        normRegions = new TextureRegion[content.blocks().size];
+        normRegions = new TextureRegion[content.blocks().size][];
 
         //load or generate normMaps
         for(int i = 0; i < normRegions.length; i++){
             var block = content.block(i);
             int w = block.size*tilesize*8, h = block.size*tilesize*8;
-            Fi file = Vars.dataDirectory.child("mods").child("ShadowShader").child(block.name + ".png");
-            Fi genFile = Vars.dataDirectory.child("mods").child("ShadowShader").child(block.name + "-auto.png");
-            Pixmap img;
-            try{
-                img = PixmapIO.readPNG(file);
-            }catch(Exception e){
+            int variant = block.variantRegions != null ? block.variantRegions.length : 0;
+            normRegions[i] = new TextureRegion[variant + 1];
+
+            for(int v = -1; v < variant; v++){
+
+                Fi file = Vars.dataDirectory.child("mods").child("ShadowShader").child(block.name + (v == -1 ? "" : v + 1) + ".png");
+                Fi genFile = Vars.dataDirectory.child("mods").child("ShadowShader").child(block.name + (v == -1 ? "" : v + 1) + "-auto.png");
+
+                Pixmap norm;
+
                 try{
-                    img = PixmapIO.readPNG(genFile);
-                }catch(Exception ignore){
-                    Log.errTag("ShadowShader", "Error reading depth from file: " + block.localizedName + " & auto gen not found. Using generator......");
-                    FrameBuffer buffer = new FrameBuffer(w, h);
-                    buffer.begin();
-                    camera.width = w;
-                    camera.height = h;
-                    camera.position.x = 0;
-                    camera.position.y = 0;
-                    camera.update();
-                    Draw.proj(camera);
-                    Draw.reset();
-                    Draw.rect(block.fullIcon, 0, 0, w, h);
-                    Draw.flush();
-                    byte[] lines = ScreenUtils.getFrameBufferPixels(0, 0, w, h, true);
-                    buffer.end();
-                    buffer.dispose();
+                    norm = PixmapIO.readPNG(file);
+                }catch(Exception e){
+                    try{
+                        norm = PixmapIO.readPNG(genFile);
+                    }catch(Exception ignore){
+                        Log.errTag("ShadowShader", "Error reading depth from file: " + block.localizedName + " & auto gen not found. Using generator......");
+                        FrameBuffer buffer = new FrameBuffer(w, h);
+                        buffer.begin();
+                        camera.width = w;
+                        camera.height = h;
+                        camera.position.x = 0;
+                        camera.position.y = 0;
+                        camera.update();
+                        Draw.proj(camera);
+                        Draw.reset();
+                        Draw.color(Color.black);
+                        Fill.rect(0, 0, w, h);
+                        Draw.reset();
+                        Draw.rect(v == -1 ? (block.region == null ? block.fullIcon : block.region): block.variantRegions[v], 0, 0, w, h);
+                        Draw.flush();
+                        byte[] lines = ScreenUtils.getFrameBufferPixels(0, 0, w, h, true);
+                        buffer.end();
+                        buffer.dispose();
 
-                    for(int j = 0; j < lines.length; j += 4){
-                        lines[j + 3] = (byte)255;//alpha
-                    }
-                    img = new Pixmap(w, h);
-                    Buffers.copy(lines, 0, img.pixels, lines.length);
-                    //normal mapping
-                    //注意pixmap原点在左上角
-                    for(int x = 0; x < img.width; x++){
-                        for(int y = x; y < img.height; y++){
-                            float Vld = Tmp.c2.set(img.get(x,y)).value(), Vrt = Tmp.c2.set(img.get(y, x)).value();
-                            float ald = Tmp.c2.set(img.get(x,y)).a, art = Tmp.c2.set(img.get(y, x)).a;
-                            float gray = Vrt < Vld ? 0.2f : Vrt - Vld < 0.01f ? 0.6f : 1f;
-                            //反向视差贴图，Vrt < Vld右上明度高于左下，低位，色浅
-                            img.set(x, y, ald < 0.1f ? Color.black : Tmp.c1.set(0f,0f, gray, 1f));
-                            img.set(y, x, art < 0.1f ? Color.black : Tmp.c1.set(0f,0f, gray, 1f));
+                        for(int j = 0; j < lines.length; j += 4){
+                            lines[j + 3] = (byte)255;//alpha
                         }
-                    }
-                    for(int x = 0; x < img.width; x++){
-                        //对角线取右上角像素
-                        img.set(x, x, x==0 ? img.get(1,0) : x==img.width-1 ? img.get(img.width-1, img.width-2) : img.get(x+1,x-1));
-                    }
-                    PixmapIO.writePng(genFile, img);
-                }
-            }
+                        Pixmap shot = new Pixmap(w, h);
+                        norm = new Pixmap(w, h);
+                        Buffers.copy(lines, 0, shot.pixels, lines.length);
+                        Buffers.copy(lines, 0, norm.pixels, lines.length);
+                        //normal mapping
+                        Generators.check(shot, norm);
 
-            var texture = new Texture(img);
-            var normRegion = new TextureRegion(texture, w, h);
-            Core.atlas.addRegion(block.name + "-normmap", normRegion);
-            normRegions[i] = normRegion;
+                        if(block instanceof Floor){
+                            for(int x = 0; x < norm.width; x++){
+                                for(int y = 0; y < norm.height; y++){
+                                    norm.set(x, y, Tmp.c1.set(0f, 0f, Tmp.c2.set(norm.get(x, y)).b * 0.2f, Tmp.c2.set(norm.get(x, y)).a));
+                                }
+                            }
+                        }
+
+                        PixmapIO.writePng(genFile, norm);
+                    }
+                }
+
+                var texture = new Texture(norm);
+                var normRegion = new TextureRegion(texture, w, h);
+                Core.atlas.addRegion(block.name + "-normmap", normRegion);
+                normRegions[i][v + 1] = normRegion;
+            }
         }
 
     }
@@ -136,15 +146,45 @@ public class Shadow{
         for(Tile tile : tiles){
             //draw white/shadow color depending on blend
             float bs = tile.block().size * tilesize;
+            if(state.rules.fog && tile.build != null && !tile.build.wasVisible) continue;
             Draw.z(getLayer());
+            Draw.color();
+            Draw.mixcol();
             if(!depthTex){
-                Draw.color();
                 Draw.mixcol(Color.white, 1f);
-                Draw.rect(tile.block().fullIcon, tile.build == null ? tile.worldx() : tile.build.x, tile.build == null ? tile.worldy() : tile.build.y, bs, bs, tile.build == null ? 0f : tile.build.drawrot());
+                Draw.rect(tile.block().fullIcon, tile.build == null ? tile.worldx() : tile.build.x, tile.build == null ? tile.worldy() : tile.build.y, bs, bs, (tile.build == null || tile.build instanceof BaseTurret.BaseTurretBuild) ? 0f : tile.build.drawrot());
             }else{
+                Draw.rect(normRegions[tile.block().id][0], tile.build == null ? tile.worldx() : tile.build.x, tile.build == null ? tile.worldy() : tile.build.y, bs, bs, (tile.build == null || tile.build instanceof BaseTurret.BaseTurretBuild) ? 0f : tile.build.drawrot());
+            }
+        }
+    }
+
+    public static void drawMap(){
+        if(!shadow && !debug) return;
+        Draw.z(getLayer());
+        Draw.color();
+        var r = Core.camera.bounds(Tmp.r1);
+        for(int x = Mathf.floor(r.x/tilesize); x < Mathf.floor((r.x + r.width)/tilesize) ; x++){
+            for(int y = Mathf.floor(r.y/tilesize); y < Mathf.floor((r.y + r.height)/tilesize) ; y++){
+                var tile = world.tile(x, y);
+                if(tile == null || tile.build != null) continue;
+                Block todraw = tile.block() != Blocks.air ? tile.block() : null;
+                //TODO texture variants
+                //Block todraw = tile.block() != Blocks.air ? tile.block() : tile.overlay() != Blocks.air ? tile.overlay() : tile.floor();
+                if(todraw == null) continue;
+                float bs = tilesize;
                 Draw.mixcol();
-                Draw.color((!tile.block().hasShadow || (state.rules.fog && tile.build != null && !tile.build.wasVisible)) ? Color.clear : Color.white);
-                Draw.rect(normRegions[tile.block().id], tile.build == null ? tile.worldx() : tile.build.x, tile.build == null ? tile.worldy() : tile.build.y, bs, bs, tile.build == null ? 0f : tile.build.drawrot());
+                if(depthTex){
+                    Mathf.rand.setSeed(tile.pos());
+                    if(todraw.variantRegions == null){
+                        Draw.rect(normRegions[todraw.id][0], tile.worldx(), tile.worldy(), bs, bs, 0f);
+                    }else{
+                        Draw.rect(normRegions[todraw.id][1 + Mathf.randomSeed(tile.pos(), 0, Math.max(0, todraw.variantRegions.length - 1))], tile.worldx(), tile.worldy(), bs, bs, 0f);
+                    }
+                }else if(todraw.cacheLayer == CacheLayer.walls){
+                    Draw.mixcol(Color.white, 1f);
+                    Draw.rect(todraw.fullIcon, tile.worldx(), tile.worldy(), bs, bs, 0f);
+                }
             }
         }
     }

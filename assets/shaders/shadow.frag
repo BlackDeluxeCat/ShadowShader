@@ -54,9 +54,9 @@ void main(){
         if(dst < radius){
             bool isShadow = false;
             float shadowLen = dst / LIGHTH;
+            vec2 normali = normalize(light.xy - worldxy) * u_invsize;
             for(float j = 0.0; j < shadowLen; j += u_EDGE_PRECISION){
-                vec2 blockscreenxy = T + normalize(light.xy - worldxy) * j * u_invsize;
-                vec4 shadow = texture2D(u_texture, blockscreenxy);
+                vec4 shadow = texture2D(u_texture, T + normali * j);//blockscreenxy
                 if((shadow.b - shadow0.b) > (j / shadowLen)){
                     if(dst - j < light.z) break;
                     shadowness = max(shadowness, 1.0 - dst / radius);
