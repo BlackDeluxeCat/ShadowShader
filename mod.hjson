@@ -11,6 +11,6 @@ dependencies: [
 description: "SHADOOOW your GAME!! repo: BlackDeluxeCat/ShadowShader"
 
 version: 1.2
-minGameVersion: 144.1
+minGameVersion: 145
 java: true
 hidden: true

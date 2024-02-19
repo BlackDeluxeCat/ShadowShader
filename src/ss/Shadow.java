@@ -164,8 +164,8 @@ public class Shadow{
         Draw.z(getLayer());
         Draw.color();
         var r = Core.camera.bounds(Tmp.r1);
-        for(int x = Mathf.floor(r.x/tilesize); x < Mathf.floor((r.x + r.width)/tilesize) ; x++){
-            for(int y = Mathf.floor(r.y/tilesize); y < Mathf.floor((r.y + r.height)/tilesize) ; y++){
+        for(int x = Mathf.floor(r.x/tilesize); x < Mathf.ceil((r.x + r.width)/tilesize) ; x++){
+            for(int y = Mathf.floor(r.y/tilesize); y < Mathf.ceil((r.y + r.height)/tilesize) ; y++){
                 var tile = world.tile(x, y);
                 if(tile == null || tile.build != null) continue;
                 Block todraw = tile.block() != Blocks.air ? tile.block() : null;
